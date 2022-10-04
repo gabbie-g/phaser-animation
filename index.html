@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phaser Animation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet"> 
+    <style>
+        body{
+            display: flex;
+            height: 100vh;
+            background-color: #000;
+            margin: 0;
+            font-family: 'Noto Serif';
+        }
+        #container{
+            margin: auto;
+            max-width: 800px;
+            max-height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+    <script>
+
+        var config = {
+            type: Phaser.AUTO,
+            scale: {
+                mode: Phaser.Scale.FIT,
+                parent: 'container',
+                width: 800,
+                height: 600
+            },
+            width: 800,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity:{
+                        y: 50
+                    },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        }
+
+        var game = new Phaser.Game(config);
+
+        function preload(){
+            this.load.image('droplet-small','images/droplet-small.png');
+            this.load.image('droplet-big', 'images/droplet-big.png');
+            this.load.image('umbrella', 'images/umbrella.png');
+            this.load.spritesheet('couple', 'images/couple.png', {
+                frameWidth: 339,
+                frameHeight: 463
+            })
+        };
+
+        var droplet_big;
+
+        function create(){
+            let umbrella = this.physics.add.staticImage(300, 196, 'umbrella');
+            umbrella.body.setOffset(0, 60);
+            let couple = this.add.sprite(300, 380, 'couple');
+
+            this.anims.create({
+                key: 'stand',
+                frames: this.anims.generateFrameNumbers('couple', {
+                    start: 0,
+                    end: 2
+                }),
+                frameRate: 0.2,
+                repeat: -1
+            });
+            couple.anims.play('stand', true);
+
+            let droplets_small = this.physics.add.group();
+            this.physics.add.collider(umbrella, droplets_small, delete_droplets);
+
+            let droplets_big = this.physics.add.group();
+            this.physics.add.collider(droplets_big, umbrella, delete_droplets);
+
+            function release_small_droplets(scene){
+                let x = Phaser.Math.Between(150, 450);
+                let droplet_small = droplets_small.create(x, -100, 'droplet-small');
+                droplet_small.setBounce(0.2);
+                droplet_small.setVelocity(Phaser.Math.Between(-60, 60), 0);
+
+                let delay = Phaser.Math.Between(50, 200);
+                scene.time.delayedCall(delay, release_small_droplets, [scene], this);
+            }
+
+            release_small_droplets(this);
+
+
+            function release_big_droplets(scene){
+                let x = Phaser.Math.Between(200, 400);
+                droplet_big = droplets_big.create(x, -100, 'droplet-big');
+                droplet_big.setBounce(0.2);
+                droplet_big.setVelocity(Phaser.Math.Between(-60, 60), 0);
+
+                let delay = Phaser.Math.Between(600, 1200);
+                scene.time.delayedCall(delay, release_big_droplets, [scene], this);
+            }
+
+            release_big_droplets(this);
+
+            let text = this.add.text(500, 250, 'RAIN', {
+                fontFamily: 'Noto Serif',
+                fill: 'white',
+                fontSize: '18px'
+            });
+            let author = this.add.text(530, 250, "\n\nby Robert Louis Stevenson",{
+                fontStyle: 'italic',
+                fontFamily: 'Noto Serif'
+            });
+
+            setTimeout(()=> {author.setText(""); text.setText("The rain is raining all around,\nIt falls on field and tree,\nIt rains on the umbrellas here,\nAnd on the ships at sea.")}, 20000);
+
+        };
+
+        function delete_droplets(umbrella, droplet){
+            setTimeout(()=>droplet.disableBody(true, true), 16);
+        }
+
+        function update(){};
+    </script>
+</body>
+</html>
